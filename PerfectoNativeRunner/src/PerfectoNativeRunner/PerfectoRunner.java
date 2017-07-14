@@ -134,7 +134,7 @@ public class PerfectoRunner {
 			}
 		}
 
-		response = hc.sendRequest("https://" + host + "/services/reports/" + reportId + "?operation=download&user="
+		response = hc.sendRequest("https://" + host + "/services/reports/" + reportId.replace(" ","%20") + "?operation=download&user="
 				+ username + "&password=" + password + "&responseformat=xml");
 
 		Map<availableReportOptions, Object> testResults = new HashMap<availableReportOptions, Object>();
