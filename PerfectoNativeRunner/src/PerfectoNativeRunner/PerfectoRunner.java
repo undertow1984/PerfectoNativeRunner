@@ -51,7 +51,6 @@ public class PerfectoRunner {
 	private String fileOutputPdfLocal;
 	private String xmlFileLocal;
 	private String pdfFileLocal;
-	
 
 	// proxy constructor
 	public PerfectoRunner(Proxy proxy) {
@@ -63,7 +62,7 @@ public class PerfectoRunner {
 	}
 
 	public enum availableReportOptions {
-		scriptTimerElapsed, scriptTimerDevice, scriptTimerSystem, scriptTimerUx, scriptStartTime, scriptEndTime, executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport, variables, exception, recordingStreamFlvUrl, recordingDownloadFlvUrl, recordingStreamMp4Url, recordingDownloadMp4Url, vitalsUrl, pcapUrl, recordingFlvFileName, recordingMp4FileName, vitalsFileName, pcapFileName, pdfFileName, pdfUrl,xmlFileName, xmlUrl
+		scriptTimerElapsed, scriptTimerDevice, scriptTimerSystem, scriptTimerUx, scriptStartTime, scriptEndTime, executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport, variables, exception, recordingStreamFlvUrl, recordingDownloadFlvUrl, recordingStreamMp4Url, recordingDownloadMp4Url, vitalsUrl, pcapUrl, recordingFlvFileName, recordingMp4FileName, vitalsFileName, pcapFileName, pdfFileName, pdfUrl, xmlFileName, xmlUrl
 	}
 
 	public String getXMLReport(String host, String username, String password, String reportKey)
@@ -79,13 +78,12 @@ public class PerfectoRunner {
 				+ "?operation=download&user=" + username + "&password=" + password + "&responseformat=xml");
 		return response;
 	}
-	
-	
 
 	// executes the script and generates the response data
 	public Map<availableReportOptions, Object> executeScript(String host, String username, String password,
 			String scriptKey, String deviceId, String additionalParams, int cycles, long waitBetweenCycles,
-			String fileOutputVideo, String fileOutputVitals, String fileOutputPcap, String fileOutputXml, String fileOutputPdf) throws DOMException, Exception {
+			String fileOutputVideo, String fileOutputVitals, String fileOutputPcap, String fileOutputXml,
+			String fileOutputPdf) throws DOMException, Exception {
 		HttpClient hc;
 		if (proxy != null) {
 			hc = new HttpClient(proxy);
@@ -99,16 +97,21 @@ public class PerfectoRunner {
 		fileOutputVideoLocal = fileOutputVideo;
 		fileOutputVitalsLocal = fileOutputVitals;
 		fileOutputPcapLocal = fileOutputPcap;
-		fileOutputXmlLocal= fileOutputXml;
+		fileOutputXmlLocal = fileOutputXml;
 		fileOutputPdfLocal = fileOutputPdf;
 
 		String executionId = "";
 		String reportId = "";
-
-		String response = hc.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey="
-				+ scriptKey + ".xml&responseformat=xml&param.DUT=" + deviceId + "&user=" + username + "&password="
-				+ password + additionalParams);
-
+		String response = "";
+		if (!deviceId.equals("")) {
+			response = hc.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey="
+					+ scriptKey + ".xml&responseformat=xml&param.DUT=" + deviceId + "&user=" + username + "&password="
+					+ password + additionalParams);
+		} else {
+			response = hc
+					.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey=" + scriptKey
+							+ ".xml&responseformat=xml&user=" + username + "&password=" + password + additionalParams);
+		}
 		if (response.contains("xml")) {
 			executionId = hc.getXMLValue(response, "executionId");
 
@@ -121,7 +124,7 @@ public class PerfectoRunner {
 						Thread.sleep(waitBetweenCycles);
 					} else {
 						reportId = hc.getJsonValue(response, "reportKey");
-						reportKeyLocal=reportId;
+						reportKeyLocal = reportId;
 						break;
 					}
 				}
@@ -134,8 +137,8 @@ public class PerfectoRunner {
 			}
 		}
 
-		response = hc.sendRequest("https://" + host + "/services/reports/" + reportId.replace(" ","%20") + "?operation=download&user="
-				+ username + "&password=" + password + "&responseformat=xml");
+		response = hc.sendRequest("https://" + host + "/services/reports/" + reportId.replace(" ", "%20")
+				+ "?operation=download&user=" + username + "&password=" + password + "&responseformat=xml");
 
 		Map<availableReportOptions, Object> testResults = new HashMap<availableReportOptions, Object>();
 
@@ -172,7 +175,7 @@ public class PerfectoRunner {
 
 			try {
 				NodeList nodeL8 = getXPathList(xml,
-						"//code[text()=\"CompletedWithErrors\"]/following-sibling::description[text()=\"FLOW_CHANGE_REQUESTED: Flow change initiated by script command - EXIT\"]/ancestor::output/ancestor::flow[2]/step[last()]/flow//output/status/description");
+						"//code[text()=\"CompletedWithErrors\"]/following-sibling::description[text()=\"FLOW_CHANGE_REQUESTED: Flow change initiated by script command - EXIT\"]/ancestor::output/ancestor::flow[2]/step[1]/flow//output/status/description");
 				String exception = nodeL8.item(0).getTextContent();
 
 				testResults.put(availableReportOptions.exception, exception);
@@ -255,19 +258,23 @@ public class PerfectoRunner {
 
 		} catch (Exception ex) {
 		}
-		
+
 		try {
 			xmlFileLocal = reportKeyLocal.split("/")[1].replace(".xml", "");
 			pdfFileLocal = reportKeyLocal.split("/")[1].replace(".xml", "");
 			testResults.put(availableReportOptions.xmlFileName, xmlFileLocal);
-			testResults.put(availableReportOptions.xmlUrl, "https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
-			+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&responseformat=xml");
-			
+			testResults.put(availableReportOptions.xmlUrl,
+					"https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
+							+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal
+							+ "&responseformat=xml");
+
 			testResults.put(availableReportOptions.pdfFileName, xmlFileLocal);
-			testResults.put(availableReportOptions.pdfUrl, "https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
-			+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&format=pdf");
+			testResults.put(availableReportOptions.pdfUrl,
+					"https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
+							+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal
+							+ "&format=pdf");
 		} catch (Exception ex) {
-			
+
 		}
 
 		try {
@@ -420,8 +427,8 @@ public class PerfectoRunner {
 	public void downloadMP4Video() throws Exception {
 
 		HttpClient hc = new HttpClient();
-		File file = new File( fileOutputVideoLocal, recordingMP4Local.split("/")[5]);
-		hc.download(recordingMP4Local,file);
+		File file = new File(fileOutputVideoLocal, recordingMP4Local.split("/")[5]);
+		hc.download(recordingMP4Local, file);
 	}
 
 	public void downloadFLVVideo() throws Exception {
@@ -433,37 +440,34 @@ public class PerfectoRunner {
 	public void downloadVitals() throws Exception {
 		HttpClient hc = new HttpClient();
 		File file = new File(fileOutputVitalsLocal, vitalsFileLocal.replace("vitals/", ""));
-		hc.download(
-				"https://" + hostLocal + "/services/reports/" + reportKeyLocal + "?operation=monitor&user="
-						+ usernameLocal + "&password=" + passwordLocal + "&attachment=" + vitalsFileLocal + "", file
-				);
+		hc.download("https://" + hostLocal + "/services/reports/" + reportKeyLocal + "?operation=monitor&user="
+				+ usernameLocal + "&password=" + passwordLocal + "&attachment=" + vitalsFileLocal + "", file);
 	}
 
 	public void downloadPCAP() throws Exception {
 		HttpClient hc = new HttpClient();
 		File file = new File(fileOutputPcapLocal, pcapFileLocal.replace("network/", ""));
-		hc.download(
-				"https://" + hostLocal + "/services/reports/" + reportKeyLocal + "?operation=network&user="
-						+ usernameLocal + "&password=" + passwordLocal + "&attachment=" + pcapFileLocal + "",
-				file);
+		hc.download("https://" + hostLocal + "/services/reports/" + reportKeyLocal + "?operation=network&user="
+				+ usernameLocal + "&password=" + passwordLocal + "&attachment=" + pcapFileLocal + "", file);
 	}
-	
+
 	public void downloadXMLReport() throws Exception {
 		HttpClient hc = new HttpClient();
-		File file = new File(fileOutputXmlLocal, xmlFileLocal+".xml");
-		
+		File file = new File(fileOutputXmlLocal, xmlFileLocal + ".xml");
+
 		hc.download("https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
-				+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&responseformat=xml", file);
+				+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&responseformat=xml",
+				file);
 	}
-	
+
 	public void downloadPDFReport() throws Exception {
 		HttpClient hc = new HttpClient();
-		File file = new File(fileOutputPdfLocal, pdfFileLocal+".pdf");
-		
-		hc.download("https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
-				+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&format=pdf", file);
+		File file = new File(fileOutputPdfLocal, pdfFileLocal + ".pdf");
+
+		hc.download(
+				"https://" + hostLocal + "/services/reports/" + reportKeyLocal.replace(" ", "%20")
+						+ "?operation=download&user=" + usernameLocal + "&password=" + passwordLocal + "&format=pdf",
+				file);
 	}
-	
-	
-	
+
 }
